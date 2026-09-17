@@ -517,7 +517,7 @@
 
       <div class="field">
         <label for="questionCount">Number of questions</label>
-        <input type="number" id="questionCount" min="1" value="10">
+        <input type="number" id="questionCount" min="1" value="50">
       </div>
 
       <div id="setupError" class="error-box hidden"></div>
@@ -796,7 +796,7 @@
   function goToSetup() {
     $("setupWordCount").textContent = state.words.length + " word" + (state.words.length === 1 ? "" : "s") + " loaded.";
     $("questionCount").max = state.words.length;
-    $("questionCount").value = Math.min(10, state.words.length);
+    $("questionCount").value = Math.min(50, state.words.length);
     selectOption("directionOptions", state.settings.direction);
     selectOption("modeOptions", state.settings.mode);
     hide("setupError");
