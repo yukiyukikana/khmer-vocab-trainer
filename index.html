@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Khmer Vocabulary Trainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Khmer:wght@500;700&family=Noto+Sans+Khmer:wght@400;600&family=Noto+Sans+JP:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+
+  :root {
+    --bg: #EFE7D8;
+    --bg-card: #FBF8F1;
+    --ink: #2B2118;
+    --ink-soft: #6E6255;
+    --laterite: #8A3B27;
+    --laterite-dark: #6E2E1E;
+    --jungle: #234A3B;
+    --jungle-dark: #16332A;
+    --gold: #B8862E;
+    --border: #DDD0B5;
+    --border-strong: #C9B98F;
+    --success-bg: #E4EEE3;
+    --success-ink: #234A3B;
+    --error-bg: #F6E4DE;
+    --error-ink: #8A3B27;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(43,33,24,0.06), 0 4px 14px rgba(43,33,24,0.05);
+  }
+
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #1B1712;
+      --bg-card: #262019;
+      --ink: #EFE7D8;
+      --ink-soft: #B7AC98;
+      --laterite: #D3805F;
+      --laterite-dark: #E39B7C;
+      --jungle: #5C9C84;
+      --jungle-dark: #7BB89F;
+      --gold: #D9AC5C;
+      --border: #3A3122;
+      --border-strong: #4C4127;
+      --success-bg: #1F2E24;
+      --success-ink: #8FCBAA;
+      --error-bg: #331E19;
+      --error-ink: #E39B7C;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.25);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #1B1712;
+    --bg-card: #262019;
+    --ink: #EFE7D8;
+    --ink-soft: #B7AC98;
+    --laterite: #D3805F;
+    --laterite-dark: #E39B7C;
+    --jungle: #5C9C84;
+    --jungle-dark: #7BB89F;
+    --gold: #D9AC5C;
+    --border: #3A3122;
+    --border-strong: #4C4127;
+    --success-bg: #1F2E24;
+    --success-ink: #8FCBAA;
+    --error-bg: #331E19;
+    --error-ink: #E39B7C;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 4px 14px rgba(0,0,0,0.25);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .khmer { font-family: "Noto Sans Khmer", "Noto Serif Khmer", -apple-system, sans-serif; }
+  .jp { font-family: "Noto Sans JP", -apple-system, sans-serif; }
+
+  header.top {
+    background: linear-gradient(180deg, var(--laterite) 0%, var(--laterite-dark) 100%);
+    color: #FBF8F1;
+    padding: 28px 20px 34px;
+    text-align: center;
+  }
+  header.top h1 {
+    font-family: "Noto Serif Khmer", Georgia, serif;
+    font-weight: 700;
+    font-size: 1.6rem;
+    margin: 0 0 4px;
+    letter-spacing: 0.01em;
+  }
+  header.top p {
+    margin: 0;
+    font-size: 0.92rem;
+    color: #F0DFCF;
+  }
+
+  main {
+    max-width: 560px;
+    margin: -20px auto 60px;
+    padding: 0 16px;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-top: 20px;
+  }
+
+  .hidden { display: none !important; }
+
+  h2 {
+    font-size: 1.15rem;
+    margin: 0 0 6px;
+    font-weight: 600;
+  }
+  .muted {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    margin: 0 0 18px;
+  }
+
+  .dropzone {
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: 30px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .dropzone:hover, .dropzone.drag {
+    border-color: var(--laterite);
+    background: rgba(138,59,39,0.05);
+  }
+  .dropzone svg { color: var(--laterite); margin-bottom: 10px; }
+  .dropzone strong { color: var(--ink); }
+  .dropzone input { display: none; }
+
+  .saved-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: var(--success-bg);
+    color: var(--success-ink);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    font-size: 0.92rem;
+  }
+  .saved-banner button {
+    flex-shrink: 0;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border-radius: 8px;
+    border: none;
+    padding: 11px 18px;
+    cursor: pointer;
+    transition: transform 0.06s ease, opacity 0.15s ease;
+  }
+  button:active { transform: scale(0.98); }
+  button.primary {
+    background: var(--jungle);
+    color: #FBF8F1;
+  }
+  button.primary:hover { background: var(--jungle-dark); }
+  button.primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  button.ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--border-strong);
+  }
+  button.ghost:hover { background: rgba(0,0,0,0.03); }
+  button.text-link {
+    background: none;
+    border: none;
+    color: var(--laterite);
+    padding: 4px 0;
+    font-weight: 600;
+    text-decoration: underline;
+  }
+  button.block { width: 100%; }
+
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .row > * { flex: 1; }
+
+  .error-box {
+    background: var(--error-bg);
+    color: var(--error-ink);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 0.88rem;
+    margin-top: 14px;
+  }
+
+  .preview-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 16px 0;
+  }
+  table.preview {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.88rem;
+    min-width: 420px;
+  }
+  table.preview th, table.preview td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  table.preview th {
+    background: rgba(0,0,0,0.03);
+    font-weight: 600;
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+  }
+  table.preview tr:last-child td { border-bottom: none; }
+
+  label.check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    margin: 4px 0 16px;
+    cursor: pointer;
+  }
+
+  .field { margin-bottom: 18px; }
+  .field label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+
+  .option-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .option-grid.stack { grid-template-columns: 1fr; }
+  .opt-btn {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-weight: 500;
+    color: var(--ink);
+    text-align: left;
+    font-size: 0.95rem;
+  }
+  .opt-btn.selected {
+    border-color: var(--jungle);
+    background: rgba(35,74,59,0.08);
+    color: var(--jungle);
+  }
+
+  input[type="number"], input[type="text"] {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border-strong);
+    background: var(--bg-card);
+    color: var(--ink);
+    font-size: 0.95rem;
+    font-family: inherit;
+  }
+  input:focus, button:focus-visible, .opt-btn:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 1px;
+  }
+
+  .progress-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.82rem;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+  .progress-track {
+    height: 5px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 22px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    transition: width 0.25s ease;
+  }
+
+  .quiz-prompt {
+    text-align: center;
+    padding: 22px 10px 26px;
+  }
+  .quiz-prompt .direction-tag {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+  .quiz-prompt .prompt-text {
+    font-size: 1.9rem;
+    font-weight: 600;
+    word-break: break-word;
+  }
+  .quiz-prompt .prompt-sub {
+    font-size: 1rem;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .answers { display: flex; flex-direction: column; gap: 10px; }
+  .answer-btn {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-strong);
+    border-radius: 10px;
+    padding: 13px 16px;
+    font-size: 1.05rem;
+    text-align: left;
+    color: var(--ink);
+  }
+  .answer-btn:hover:not(:disabled) { border-color: var(--laterite); }
+  .answer-btn.correct {
+    background: var(--success-bg);
+    border-color: var(--success-ink);
+    color: var(--success-ink);
+  }
+  .answer-btn.wrong {
+    background: var(--error-bg);
+    border-color: var(--error-ink);
+    color: var(--error-ink);
+  }
+  .answer-btn:disabled { cursor: default; }
+
+  .feedback-note {
+    text-align: center;
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin: 14px 0 4px;
+    min-height: 1.3em;
+  }
+  .feedback-note.correct { color: var(--success-ink); }
+  .feedback-note.wrong { color: var(--error-ink); }
+
+  .flash-card {
+    background: var(--bg);
+    border: 1.5px dashed var(--border-strong);
+    border-radius: var(--radius);
+    padding: 26px 16px;
+    text-align: center;
+    margin-bottom: 16px;
+    cursor: pointer;
+  }
+  .flash-card .reveal {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 1.3rem;
+  }
+  .flash-card .hint {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    margin-top: 10px;
+  }
+  .selfcheck-btns { display: flex; gap: 10px; margin-top: 4px; }
+  .selfcheck-btns button { flex: 1; }
+  button.knew { background: var(--jungle); color: #FBF8F1; }
+  button.missed { background: var(--laterite); color: #FBF8F1; }
+
+  .results-score {
+    text-align: center;
+    padding: 10px 0 20px;
+  }
+  .results-score .big {
+    font-family: "Noto Serif Khmer", Georgia, serif;
+    font-size: 2.6rem;
+    font-weight: 700;
+    color: var(--jungle);
+  }
+  .results-score .cap { color: var(--ink-soft); font-size: 0.9rem; }
+
+  .miss-item {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.92rem;
+  }
+  .miss-item:last-child { border-bottom: none; }
+  .miss-item .your-answer { color: var(--error-ink); }
+  .miss-item .correct-answer { color: var(--success-ink); }
+
+  footer.app-footer {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+    padding: 10px 20px 30px;
+  }
+
+  @media (max-width: 400px) {
+    .option-grid { grid-template-columns: 1fr; }
+    .quiz-prompt .prompt-text { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1 class="khmer">វាក្យសព្ទខ្មែរ</h1>
+  <p>Khmer Vocabulary Trainer</p>
+</header>
+
+<main>
+
+  <!-- SCREEN: UPLOAD -->
+  <section id="screen-upload">
+    <div id="savedBanner" class="saved-banner hidden">
+      <span id="savedBannerText"></span>
+      <button class="ghost" id="btnUseSaved">Use this list</button>
+    </div>
+
+    <div class="card">
+      <h2>Upload your word list</h2>
+      <p class="muted">A CSV or Excel file with three columns, in this order: Khmer spelling, pronunciation, Japanese translation. A header row is fine — you'll get to confirm it on the next step.</p>
+
+      <div class="dropzone" id="dropzone">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        <div><strong>Tap to choose a file</strong></div>
+        <div class="muted" style="margin:4px 0 0;">.csv, .xlsx, or .xls</div>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls">
+      </div>
+
+      <div id="uploadError" class="error-box hidden"></div>
+    </div>
+
+    <p class="muted" style="text-align:center; margin-top:18px;">Have a PDF instead? Convert it to CSV or Excel first — table layouts in PDFs are too inconsistent to read reliably here.</p>
+  </section>
+
+  <!-- SCREEN: PREVIEW -->
+  <section id="screen-preview" class="hidden">
+    <div class="card">
+      <h2>Check the parsing</h2>
+      <p class="muted" id="previewSummary"></p>
+
+      <label class="check">
+        <input type="checkbox" id="headerToggle">
+        First row is a header, not a word (skip it)
+      </label>
+
+      <div class="preview-wrap">
+        <table class="preview">
+          <thead><tr><th>Khmer</th><th>Pronunciation</th><th>Japanese</th></tr></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+
+      <div id="previewWarning" class="error-box hidden"></div>
+
+      <div class="row" style="margin-top:18px;">
+        <button class="ghost" id="btnBackToUpload">Choose a different file</button>
+        <button class="primary" id="btnConfirmList">Save word list</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN: SETUP -->
+  <section id="screen-setup" class="hidden">
+    <div class="card">
+      <h2>Set up your test</h2>
+      <p class="muted" id="setupWordCount"></p>
+
+      <div class="field">
+        <label>Direction</label>
+        <div class="option-grid" id="directionOptions">
+          <button type="button" class="opt-btn" data-value="kh-jp">Khmer → Japanese</button>
+          <button type="button" class="opt-btn" data-value="jp-kh">Japanese → Khmer</button>
+          <button type="button" class="opt-btn" data-value="pr-jp">Pronunciation → Japanese</button>
+          <button type="button" class="opt-btn" data-value="mixed">Mixed</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>How you'll answer</label>
+        <div class="option-grid stack" id="modeOptions">
+          <button type="button" class="opt-btn" data-value="multiple">Multiple choice</button>
+          <button type="button" class="opt-btn" data-value="typed">Type the answer</button>
+          <button type="button" class="opt-btn" data-value="selfcheck">Flashcard (self-check)</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="questionCount">Number of questions</label>
+        <input type="number" id="questionCount" min="1" value="10">
+      </div>
+
+      <div id="setupError" class="error-box hidden"></div>
+
+      <button class="primary block" id="btnStartQuiz">Start test</button>
+      <div style="text-align:center; margin-top:14px;">
+        <button class="text-link" id="btnUploadNewFromSetup">Upload a different list</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN: QUIZ -->
+  <section id="screen-quiz" class="hidden">
+    <div class="card">
+      <div class="progress-line">
+        <span id="progressLabel">Question 1 of 10</span>
+        <span id="scoreLabel">Score: 0</span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+      <div class="quiz-prompt">
+        <div class="direction-tag" id="directionTag"></div>
+        <div class="prompt-text" id="promptText"></div>
+        <div class="prompt-sub" id="promptSub"></div>
+      </div>
+
+      <!-- multiple choice -->
+      <div id="mcAnswers" class="answers hidden"></div>
+
+      <!-- typed -->
+      <div id="typedArea" class="hidden">
+        <input type="text" id="typedInput" placeholder="Type your answer">
+        <button class="primary block" id="btnSubmitTyped" style="margin-top:12px;">Check</button>
+      </div>
+
+      <!-- self-check -->
+      <div id="selfcheckArea" class="hidden">
+        <div class="flash-card" id="flashCard">
+          <span class="hint">Tap to reveal the answer</span>
+          <div class="reveal hidden" id="flashAnswer"></div>
+        </div>
+        <div class="selfcheck-btns hidden" id="selfcheckBtns">
+          <button class="missed" id="btnMissed">Unsure</button>
+          <button class="knew" id="btnKnew">Know</button>
+        </div>
+      </div>
+
+      <div class="feedback-note" id="feedbackNote"></div>
+
+      <button class="ghost block hidden" id="btnNextQuestion" style="margin-top:10px;">Next</button>
+    </div>
+  </section>
+
+  <!-- SCREEN: RESULTS -->
+  <section id="screen-results" class="hidden">
+    <div class="card">
+      <div class="results-score">
+        <div class="big" id="resultsScore">0/0</div>
+        <div class="cap">correct</div>
+      </div>
+
+      <div id="missList"></div>
+      <p class="muted hidden" id="noMisses">You got every word right.</p>
+
+      <div class="row" style="margin-top:18px;">
+        <button class="ghost" id="btnRetake">Retake this set</button>
+        <button class="primary" id="btnNewSetup">New test</button>
+      </div>
+      <div style="text-align:center; margin-top:14px;">
+        <button class="text-link" id="btnUploadNewFromResults">Upload a different list</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="app-footer">Your word list is stored only in this browser.</footer>
+
+<script>
+(function() {
+  "use strict";
+
+  var STORAGE_KEY = "khmerVocabList_v1";
+
+  var state = {
+    rawRows: [],
+    words: [],          // {kh, pr, jp}
+    settings: { direction: "kh-jp", mode: "multiple", count: 10 },
+    quiz: [],            // generated questions
+    qIndex: 0,
+    score: 0,
+    misses: [],
+    answered: false
+  };
+
+  function $(id) { return document.getElementById(id); }
+  function show(id) { $(id).classList.remove("hidden"); }
+  function hide(id) { $(id).classList.add("hidden"); }
+  function showScreen(name) {
+    ["upload","preview","setup","quiz","results"].forEach(function(s) {
+      $("screen-" + s).classList.toggle("hidden", s !== name);
+    });
+    window.scrollTo(0, 0);
+  }
+
+  function isKhmerText(str) {
+    return /[\u1780-\u17FF]/.test(str || "");
+  }
+
+  function saveWordsToStorage(words) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+    } catch (e) { /* storage unavailable; continue without persistence */ }
+  }
+
+  function loadWordsFromStorage() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  // ---------- Upload screen ----------
+
+  function checkSavedList() {
+    var saved = loadWordsFromStorage();
+    if (saved && saved.length > 0) {
+      $("savedBannerText").textContent = "You have a saved list of " + saved.length + " words.";
+      show("savedBanner");
+      $("btnUseSaved").onclick = function() {
+        state.words = saved;
+        goToSetup();
+      };
+    } else {
+      hide("savedBanner");
+    }
+  }
+
+  var dropzone = $("dropzone");
+  var fileInput = $("fileInput");
+  dropzone.addEventListener("click", function() { fileInput.click(); });
+  dropzone.addEventListener("dragover", function(e) { e.preventDefault(); dropzone.classList.add("drag"); });
+  dropzone.addEventListener("dragleave", function() { dropzone.classList.remove("drag"); });
+  dropzone.addEventListener("drop", function(e) {
+    e.preventDefault();
+    dropzone.classList.remove("drag");
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+  fileInput.addEventListener("change", function(e) {
+    if (e.target.files && e.target.files[0]) handleFile(e.target.files[0]);
+  });
+
+  function showUploadError(msg) {
+    $("uploadError").textContent = msg;
+    show("uploadError");
+  }
+
+  function handleFile(file) {
+    hide("uploadError");
+    var ext = file.name.split(".").pop().toLowerCase();
+
+    if (ext === "csv") {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          var parsed = Papa.parse(e.target.result, { skipEmptyLines: true });
+          if (parsed.errors && parsed.errors.length > 0 && (!parsed.data || parsed.data.length === 0)) {
+            showUploadError("Could not read that CSV file. Check that it's a plain comma-separated file.");
+            return;
+          }
+          openPreview(parsed.data);
+        } catch (err) {
+          showUploadError("Could not read that CSV file: " + err.message);
+        }
+      };
+      reader.onerror = function() { showUploadError("Could not read that file."); };
+      reader.readAsText(file);
+    } else if (ext === "xlsx" || ext === "xls") {
+      var reader2 = new FileReader();
+      reader2.onload = function(e) {
+        try {
+          var data = new Uint8Array(e.target.result);
+          var wb = XLSX.read(data, { type: "array" });
+          var sheet = wb.Sheets[wb.SheetNames[0]];
+          var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+          openPreview(rows);
+        } catch (err) {
+          showUploadError("Could not read that Excel file: " + err.message);
+        }
+      };
+      reader2.onerror = function() { showUploadError("Could not read that file."); };
+      reader2.readAsArrayBuffer(file);
+    } else {
+      showUploadError("Please upload a .csv, .xlsx, or .xls file.");
+    }
+  }
+
+  // ---------- Preview screen ----------
+
+  function openPreview(rows) {
+    // Keep rows that have at least a first column with content
+    var cleaned = rows.filter(function(r) {
+      return r && r.length > 0 && (r[0] + "").trim() !== "";
+    }).map(function(r) {
+      return [ (r[0] || "").toString().trim(), (r[1] || "").toString().trim(), (r[2] || "").toString().trim() ];
+    });
+
+    if (cleaned.length === 0) {
+      showUploadError("That file doesn't seem to have any readable rows.");
+      return;
+    }
+
+    state.rawRows = cleaned;
+
+    var likelyHeader = !isKhmerText(cleaned[0][0]);
+    $("headerToggle").checked = likelyHeader;
+
+    renderPreview();
+    showScreen("preview");
+  }
+
+  function renderPreview() {
+    var body = $("previewBody");
+    body.innerHTML = "";
+    var startIdx = $("headerToggle").checked ? 1 : 0;
+    var rowsToShow = state.rawRows.slice(startIdx, startIdx + 8);
+
+    rowsToShow.forEach(function(r) {
+      var tr = document.createElement("tr");
+      var tdKh = document.createElement("td"); tdKh.className = "khmer"; tdKh.textContent = r[0];
+      var tdPr = document.createElement("td"); tdPr.textContent = r[1];
+      var tdJp = document.createElement("td"); tdJp.className = "jp"; tdJp.textContent = r[2];
+      tr.appendChild(tdKh); tr.appendChild(tdPr); tr.appendChild(tdJp);
+      body.appendChild(tr);
+    });
+
+    var usable = state.rawRows.length - startIdx;
+    var missingCols = state.rawRows.slice(startIdx).filter(function(r) { return !r[0] || !r[2]; }).length;
+
+    $("previewSummary").textContent = "Found " + state.rawRows.length + " row" + (state.rawRows.length === 1 ? "" : "s") +
+      ". Showing the first " + rowsToShow.length + ".";
+
+    if (missingCols > 0) {
+      $("previewWarning").textContent = missingCols + " row" + (missingCols === 1 ? "" : "s") + " " +
+        (missingCols === 1 ? "is" : "are") + " missing a Khmer or Japanese entry and will be skipped.";
+      show("previewWarning");
+    } else {
+      hide("previewWarning");
+    }
+  }
+
+  $("headerToggle").addEventListener("change", renderPreview);
+  $("btnBackToUpload").addEventListener("click", function() { showScreen("upload"); });
+
+  $("btnConfirmList").addEventListener("click", function() {
+    var startIdx = $("headerToggle").checked ? 1 : 0;
+    var words = state.rawRows.slice(startIdx)
+      .filter(function(r) { return r[0] && r[2]; })
+      .map(function(r) { return { kh: r[0], pr: r[1] || "", jp: r[2] }; });
+
+    if (words.length < 1) {
+      $("previewWarning").textContent = "No usable rows found. Check that column 1 is Khmer and column 3 is Japanese.";
+      show("previewWarning");
+      return;
+    }
+
+    state.words = words;
+    saveWordsToStorage(words);
+    goToSetup();
+  });
+
+  // ---------- Setup screen ----------
+
+  function goToSetup() {
+    $("setupWordCount").textContent = state.words.length + " word" + (state.words.length === 1 ? "" : "s") + " loaded.";
+    $("questionCount").max = state.words.length;
+    $("questionCount").value = Math.min(10, state.words.length);
+    selectOption("directionOptions", state.settings.direction);
+    selectOption("modeOptions", state.settings.mode);
+    hide("setupError");
+    showScreen("setup");
+  }
+
+  function selectOption(groupId, value) {
+    var buttons = $(groupId).querySelectorAll(".opt-btn");
+    buttons.forEach(function(b) {
+      b.classList.toggle("selected", b.dataset.value === value);
+    });
+  }
+
+  function wireOptionGroup(groupId, settingKey) {
+    $(groupId).querySelectorAll(".opt-btn").forEach(function(b) {
+      b.addEventListener("click", function() {
+        state.settings[settingKey] = b.dataset.value;
+        selectOption(groupId, b.dataset.value);
+      });
+    });
+  }
+  wireOptionGroup("directionOptions", "direction");
+  wireOptionGroup("modeOptions", "mode");
+
+  $("btnUploadNewFromSetup").addEventListener("click", function() { showScreen("upload"); });
+  $("btnUploadNewFromResults").addEventListener("click", function() { showScreen("upload"); });
+
+  $("btnStartQuiz").addEventListener("click", function() {
+    var count = parseInt($("questionCount").value, 10);
+    if (!count || count < 1) count = 1;
+    if (count > state.words.length) count = state.words.length;
+    state.settings.count = count;
+
+    var uniqueJp = uniqueValues(state.words, "jp");
+    var uniqueKh = uniqueValues(state.words, "kh");
+    var needsMC = state.settings.mode === "multiple";
+    var pool = state.settings.direction === "jp-kh" ? uniqueKh : uniqueJp;
+
+    if (needsMC && pool.length < 4) {
+      $("setupError").textContent = "Multiple choice needs at least 4 words with distinct answers for this direction. Try typing the answer or the flashcard mode instead, or add more words.";
+      show("setupError");
+      return;
+    }
+    hide("setupError");
+
+    buildQuiz();
+    showScreen("quiz");
+    renderQuestion();
+  });
+
+  function uniqueValues(words, key) {
+    var seen = {};
+    var out = [];
+    words.forEach(function(w) {
+      if (!seen[w[key]]) { seen[w[key]] = true; out.push(w[key]); }
+    });
+    return out;
+  }
+
+  // ---------- Quiz building ----------
+
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  function directionFor(word) {
+    if (state.settings.direction !== "mixed") return state.settings.direction;
+    var options = ["kh-jp", "jp-kh", "pr-jp"];
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  function buildQuiz() {
+    var picked = shuffle(state.words).slice(0, state.settings.count);
+    state.quiz = picked.map(function(w) {
+      var dir = directionFor(w);
+      var prompt, sub, answer, tag;
+      if (dir === "kh-jp") {
+        prompt = w.kh; sub = w.pr; answer = w.jp; tag = "Khmer → Japanese";
+      } else if (dir === "jp-kh") {
+        prompt = w.jp; sub = ""; answer = w.kh; tag = "Japanese → Khmer";
+      } else {
+        prompt = w.pr || w.kh; sub = ""; answer = w.jp; tag = "Pronunciation → Japanese";
+      }
+      return { word: w, dir: dir, prompt: prompt, sub: sub, answer: answer, tag: tag };
+    });
+    state.qIndex = 0;
+    state.score = 0;
+    state.misses = [];
+  }
+
+  function buildChoices(question) {
+    var key = question.dir === "jp-kh" ? "kh" : "jp";
+    var others = state.words.filter(function(w) { return w[key] !== question.answer; });
+    var distractPool = shuffle(uniqueValues(others, key));
+    var distractors = distractPool.slice(0, Math.min(3, distractPool.length));
+    var choices = shuffle(distractors.concat([question.answer]));
+    return choices;
+  }
+
+  // ---------- Quiz rendering ----------
+
+  function renderQuestion() {
+    var q = state.quiz[state.qIndex];
+    var total = state.quiz.length;
+
+    $("progressLabel").textContent = "Question " + (state.qIndex + 1) + " of " + total;
+    $("scoreLabel").textContent = "Score: " + state.score;
+    $("progressFill").style.width = ((state.qIndex) / total * 100) + "%";
+
+    $("directionTag").textContent = q.tag;
+    $("promptText").textContent = q.prompt;
+    $("promptText").className = "prompt-text " + (q.dir === "jp-kh" ? "jp" : (q.dir === "pr-jp" ? "" : "khmer"));
+    $("promptSub").textContent = q.sub || "";
+    $("promptSub").classList.toggle("hidden", !q.sub);
+
+    $("feedbackNote").textContent = "";
+    $("feedbackNote").className = "feedback-note";
+    hide("btnNextQuestion");
+    state.answered = false;
+
+    hide("mcAnswers"); hide("typedArea"); hide("selfcheckArea");
+
+    if (state.settings.mode === "multiple") {
+      renderMultipleChoice(q);
+    } else if (state.settings.mode === "typed") {
+      renderTyped(q);
+    } else {
+      renderSelfCheck(q);
+    }
+  }
+
+  function answerClass(q) {
+    return q.dir === "jp-kh" ? "khmer" : "jp";
+  }
+
+  function renderMultipleChoice(q) {
+    var container = $("mcAnswers");
+    container.innerHTML = "";
+    var choices = buildChoices(q);
+    choices.forEach(function(choice) {
+      var btn = document.createElement("button");
+      btn.className = "answer-btn " + answerClass(q);
+      btn.textContent = choice;
+      btn.addEventListener("click", function() { handleMCAnswer(btn, choice, q, container); });
+      container.appendChild(btn);
+    });
+    show("mcAnswers");
+  }
+
+  function handleMCAnswer(btn, choice, q, container) {
+    if (state.answered) return;
+    state.answered = true;
+    var correct = choice === q.answer;
+    container.querySelectorAll(".answer-btn").forEach(function(b) {
+      b.disabled = true;
+      if (b.textContent === q.answer) b.classList.add("correct");
+    });
+    if (!correct) btn.classList.add("wrong");
+    registerResult(correct, q, choice);
+  }
+
+  function renderTyped(q) {
+    $("typedInput").value = "";
+    $("typedInput").className = answerClass(q);
+    $("typedInput").disabled = false;
+    $("btnSubmitTyped").disabled = false;
+    show("typedArea");
+    setTimeout(function() { $("typedInput").focus(); }, 50);
+  }
+
+  $("btnSubmitTyped").addEventListener("click", submitTyped);
+  $("typedInput").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") submitTyped();
+  });
+
+  function submitTyped() {
+    if (state.answered) return;
+    var q = state.quiz[state.qIndex];
+    var given = $("typedInput").value.trim();
+    var correct = given !== "" && given === q.answer.trim();
+    state.answered = true;
+    $("typedInput").disabled = true;
+    $("btnSubmitTyped").disabled = true;
+    if (!correct) {
+      $("feedbackNote").textContent = "Correct answer: " + q.answer;
+    }
+    registerResult(correct, q, given);
+  }
+
+  function renderSelfCheck(q) {
+    $("flashAnswer").textContent = q.answer;
+    $("flashAnswer").className = "reveal " + answerClass(q);
+    hide("flashAnswer");
+    hide("selfcheckBtns");
+    $("btnKnew").disabled = false;
+    $("btnMissed").disabled = false;
+    show("selfcheckArea");
+    $("flashCard").querySelector(".hint").classList.remove("hidden");
+    $("flashCard").onclick = function() {
+      show("flashAnswer");
+      show("selfcheckBtns");
+      $("flashCard").querySelector(".hint").classList.add("hidden");
+      $("flashCard").onclick = null;
+    };
+  }
+
+  $("btnKnew").addEventListener("click", function() {
+    if (state.answered) return;
+    state.answered = true;
+    $("btnKnew").disabled = true;
+    $("btnMissed").disabled = true;
+    registerResult(true, state.quiz[state.qIndex], "(self-marked)");
+    advanceAfterSelfCheck();
+  });
+  $("btnMissed").addEventListener("click", function() {
+    if (state.answered) return;
+    state.answered = true;
+    $("btnKnew").disabled = true;
+    $("btnMissed").disabled = true;
+    registerResult(false, state.quiz[state.qIndex], "(self-marked)");
+    advanceAfterSelfCheck();
+  });
+
+  function advanceAfterSelfCheck() {
+    setTimeout(goToNextQuestion, 350);
+  }
+
+  function registerResult(correct, q, given) {
+    if (correct) {
+      state.score++;
+      $("feedbackNote").textContent = state.settings.mode === "selfcheck" ? "" : "Correct.";
+      $("feedbackNote").classList.add("correct");
+    } else {
+      if (state.settings.mode !== "typed") {
+        $("feedbackNote").textContent = "Not quite. Correct answer: " + q.answer;
+      }
+      $("feedbackNote").classList.add("wrong");
+      state.misses.push({ prompt: q.prompt, tag: q.tag, given: given, answer: q.answer, dir: q.dir });
+    }
+    $("scoreLabel").textContent = "Score: " + state.score;
+    $("progressFill").style.width = ((state.qIndex + 1) / state.quiz.length * 100) + "%";
+    if (state.settings.mode !== "selfcheck") {
+      show("btnNextQuestion");
+    }
+  }
+
+  function goToNextQuestion() {
+    state.qIndex++;
+    if (state.qIndex >= state.quiz.length) {
+      renderResults();
+      showScreen("results");
+    } else {
+      renderQuestion();
+    }
+  }
+
+  $("btnNextQuestion").addEventListener("click", goToNextQuestion);
+
+  // ---------- Results ----------
+
+  function renderResults() {
+    $("resultsScore").textContent = state.score + "/" + state.quiz.length;
+    var list = $("missList");
+    list.innerHTML = "";
+    if (state.misses.length === 0) {
+      show("noMisses");
+    } else {
+      hide("noMisses");
+      state.misses.forEach(function(m) {
+        var row = document.createElement("div");
+        row.className = "miss-item";
+        var left = document.createElement("span");
+        left.className = m.dir === "jp-kh" ? "jp" : (m.dir === "pr-jp" ? "" : "khmer");
+        left.textContent = m.prompt;
+        var right = document.createElement("span");
+        right.className = m.dir === "jp-kh" ? "khmer correct-answer" : "jp correct-answer";
+        right.textContent = "→ " + m.answer;
+        row.appendChild(left);
+        row.appendChild(right);
+        list.appendChild(row);
+      });
+    }
+  }
+
+  $("btnRetake").addEventListener("click", function() {
+    buildQuiz();
+    showScreen("quiz");
+    renderQuestion();
+  });
+  $("btnNewSetup").addEventListener("click", function() { goToSetup(); });
+
+  // ---------- Init ----------
+  checkSavedList();
+  showScreen("upload");
+
+})();
+</script>
+</body>
+</html>
